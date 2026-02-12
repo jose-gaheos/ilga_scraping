@@ -1,0 +1,7 @@
+selenium==4.21.0
+webdriver-manager==4.0.1
+chromedriver-autoinstaller==0.6.4
+selenium-stealth==1.0.6
+2captcha-python==1.2.6
+pyyaml==6.0.1
+boto3==1.35.19

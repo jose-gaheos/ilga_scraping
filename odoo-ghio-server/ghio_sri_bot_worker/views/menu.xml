@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+        <menuitem id="menu_ghio_sri_bot_worker_root" name="SRI-BOT" sequence="5">
+            <menuitem id="menu_ghio_sri_bot_worker_process" name="Process"
+                      action="action_ghio_sri_bot_worker_process" sequence="1"/>
+            <menuitem id="menu_ghio_sri_bot_worker" name="Workers" action="action_ghio_sri_bot_worker"
+                      sequence="10"/>
+        </menuitem>
+
+    </data>
+</odoo>

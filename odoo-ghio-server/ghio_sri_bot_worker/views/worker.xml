@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+        <record id="action_ghio_sri_bot_worker" model='ir.actions.act_window'>
+            <field name='name'>SRI-BOT Worker</field>
+            <field name='res_model'>ghio.sri_bot.worker</field>
+            <field name='view_mode'>tree,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Create the first SRI-BOT Worker
+                </p>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_form" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.form</field>
+            <field name="model">ghio.sri_bot.worker</field>
+            <field name="arch" type="xml">
+                <form create="0" edit="0" delete="0">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box"/>
+                        <h1 class="oe_title">
+                            <field name="ruc" placeholder="RUC"/>
+                        </h1>
+                        <div>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="additional_ci" readonly="True" string="Additional CI"
+                                       invisible="not additional_ci"/>
+                                <field name="db_service_id" readonly="True"/>
+                                <field name="state" readonly="True"/>
+                            </group>
+                            <group>
+                                <field name="service_id"/>
+                            </group>
+                            <group string="Documents Enabled">
+                                <field name="document_type_01" readonly="True" string="Invoice"/>
+                                <field name="document_type_04" readonly="True" string="Credit Note"/>
+                                <field name="document_type_05" readonly="True" string="Debit Note"/>
+                                <field name="document_type_07" readonly="True" string="Retention"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_tree" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.tree</field>
+            <field name="model">ghio.sri_bot.worker</field>
+            <field name="arch" type="xml">
+                <tree create="0" edit="0" delete="0">
+                    <field name="ruc"/>
+                    <field name="service_id" optional="hide"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_search" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.search</field>
+            <field name="model">ghio.sri_bot.worker</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="ruc" filter_domain="[('ruc', 'ilike', self)]"/>
+                </search>
+            </field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,2 @@
+from .search_page import SearchPage
+from .information_page_supercias import InformationSupercias

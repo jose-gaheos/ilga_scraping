@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+        <record id="action_ghio_sri_bot_worker_file" model='ir.actions.act_window'>
+            <field name='name'>SRI-BOT Files</field>
+            <field name='res_model'>ghio.sri_bot.worker.file</field>
+            <field name='view_mode'>tree,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Create the first SRI-BOT Files
+                </p>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_file_form" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.file.form</field>
+            <field name="model">ghio.sri_bot.worker.file</field>
+            <field name="arch" type="xml">
+                <form create="0" edit="0" delete="0">
+                    <header>
+                        <field name="state" widget="statusbar" statusbar_visible="pending,uploaded"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box"/>
+                        <h1 class="oe_title">
+                            <field name="document_number" placeholder="Document Number" readonly="True"/>
+                        </h1>
+                        <field name="name" readonly="True"/>
+                        <group>
+                            <group>
+                                <field name="ruc" readonly="True"/>
+                            </group>
+                            <group>
+                                <field name="date" readonly="True"/>
+                                <field name="document_type" readonly="True"/>
+                                <field name="environment" readonly="True"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_file_tree" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.file.tree</field>
+            <field name="model">ghio.sri_bot.worker.file</field>
+            <field name="arch" type="xml">
+                <tree  create="0" edit="0" delete="0">
+                    <field name="document_type"/>
+                    <field name="document_number"/>
+                    <field name="name" optional="hide"/>
+                    <field name="ruc"/>
+                    <field name="date"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_file_search" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.file.search</field>
+            <field name="model">ghio.sri_bot.worker.file</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="name" filter_domain="['|', ('name', 'ilike', self), ('document_number', 'ilike', self)]"/>
+                </search>
+            </field>
+        </record>
+    </data>
+</odoo>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+         <record id="ghio_core.action_ghio_service" model='ir.actions.act_window'>
+            <field name="domain">[('parent_id', '=', False)]</field>
+        </record>
+
+        <record id="view_ghio_service_form" model="ir.ui.view">
+            <field name="name">ghio.service.form</field>
+            <field name="model">ghio.service</field>
+            <field name="inherit_id" ref="ghio_core.view_ghio_service_form"/>
+            <field name="arch" type="xml">
+                <button name="button_enable" position="after">
+                    <button string="Show Credentials" name="ghio_server_show_token" type="object"
+                            class="oe_highlight"
+                            groups="base.group_system"
+                            invisible="code != 'ghio_server' or state != 'enabled'"/>
+                    <button string="Regenerate Credentials" name="ghio_server_generate_token" type="object"
+                            groups="base.group_system"
+                            invisible="code != 'ghio_server' or state != 'enabled'"
+                            confirm="This will revoke the current credentials and generate new ones. Are you sure?"/>
+                </button>
+
+                <group name="group_right" position="after">
+                    <group name="group_service" string="Service Details" invisible="code != 'ghio_server'">
+                        <field name="ghio_server_customer_id" string="Service Customer"
+                               required="code == 'ghio_server'"/>
+                        <field name="ghio_server_customer_invoice_id" string="Invoice Customer"
+                               required="code == 'ghio_server'"/>
+                        <field name="ghio_server_db_name" string="Database Name" readonly="True"
+                               invisible="not server_handshake"/>
+                        <field name="ghio_server_db_uuid" string="Database UUID" readonly="True"
+                               invisible="not server_handshake"/>
+                        <field name="ghio_server_db_url" string="Database URL" readonly="True"
+                               invisible="not server_handshake"/>
+                    </group>
+                </group>
+            </field>
+        </record>
+    </data>
+</odoo>

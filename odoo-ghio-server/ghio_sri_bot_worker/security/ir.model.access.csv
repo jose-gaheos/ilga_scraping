@@ -1,0 +1,5 @@
+id,name,model_id/id,group_id/id,perm_read,perm_write,perm_create,perm_unlink
+access_ghio_sri_bot_worker_system,ghio.sri_bot_worker system,model_ghio_sri_bot_worker,base.group_system,1,1,1,1
+access_ghio_sri_bot_worker_file_system,ghio.sri_bot.worker.file system,model_ghio_sri_bot_worker_file,base.group_system,1,1,1,1
+access_ghio_sri_bot_worker_stage_system,ghio.sri_bot.worker.stage system,model_ghio_sri_bot_worker_stage,base.group_system,1,1,1,1
+access_ghio_sri_bot_worker_process_system,ghio.sri_bot.worker system,model_ghio_sri_bot_worker_process,base.group_system,1,1,1,1

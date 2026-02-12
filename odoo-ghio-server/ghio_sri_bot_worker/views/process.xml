@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<odoo>
+    <data>
+        <record id="action_ghio_sri_bot_worker_process" model='ir.actions.act_window'>
+            <field name='name'>SRI-BOT Process</field>
+            <field name='res_model'>ghio.sri_bot.worker.process</field>
+            <field name='view_mode'>tree,form</field>
+            <field name="help" type="html">
+                <p class="oe_view_nocontent_create">
+                    Create the first SRI-BOT Worker
+                </p>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_process_form" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.process.form</field>
+            <field name="model">ghio.sri_bot.worker.process</field>
+            <field name="arch" type="xml">
+                <form>
+                    <header>
+                        <button string="Open" name="button_open" type="object"
+                                class="oe_highlight"
+                                invisible="state != 'draft'"/>
+                        <button string="Download Files" name="button_download" type="object"
+                                class="oe_highlight"
+                                invisible="state != 'open'"/>
+                        <button string="Upload Files" name="button_upload_s3" type="object"
+                                class="oe_highlight"
+                                invisible="state != 'download'"/>
+                        <button string="Send" name="button_send" type="object"
+                                class="oe_highlight"
+                                invisible="state != 'upload'"/>
+                        <field name="state" widget="statusbar" statusbar_visible="draft,download,done"/>
+                    </header>
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="open_files"
+                                    type="object"
+                                    class="oe_stat_button"
+                                    invisible="file_count == 0"
+                                    icon="fa-server">
+                                <field string="Files" name="file_count" widget="statinfo"/>
+                            </button>
+                        </div>
+                        <group>
+                            <group>
+                                <field name="document_type_01" widget="boolean_toggle" readonly="state != 'draft'"/>
+                                <field name="document_type_07" widget="boolean_toggle" readonly="state != 'draft'"/>
+                                <field name="document_type_04" widget="boolean_toggle" readonly="state != 'draft'"/>
+                                <field name="document_type_05" widget="boolean_toggle" readonly="state != 'draft'"/>
+                                <field name="force_month" widget="boolean_toggle" readonly="state != 'draft'"
+                                       string="Force Full Month Download"/>
+                                <field name="final_count" readonly="True"/>
+                            </group>
+                            <group>
+                                <field name="date" readonly="state != 'draft'"/>
+                                <field name="service_id"
+                                       readonly="state != 'draft'"
+                                       domain="[('code', '=', 'sri_bot_worker')]"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                                <field name="worker_id"
+                                       readonly="state != 'draft'"
+                                       domain="[('service_id', '=', service_id)]"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page string="Tasks" name="tasks" invisible="state == 'draft'">
+                                <field name="stage_ids" readonly="True">
+                                    <tree>
+                                        <field name="document_type"/>
+                                        <field name="date_from"/>
+                                        <field name="date_to"/>
+                                        <field name="state"/>
+                                    </tree>
+                                </field>
+
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_process_tree" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.process.tree</field>
+            <field name="model">ghio.sri_bot.worker.process</field>
+            <field name="arch" type="xml">
+                <tree >
+                    <field name="worker_id"/>
+                    <field name="date"/>
+                    <field name="state"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="view_ghio_sri_bot_worker_process_search" model="ir.ui.view">
+            <field name="name">ghio.sri_bot.worker.process.search</field>
+            <field name="model">ghio.sri_bot.worker.process</field>
+            <field name="arch" type="xml">
+                <search>
+                    <field name="worker_id"/>
+                    <field name="service_id"/>
+                </search>
+            </field>
+        </record>
+    </data>
+</odoo>
