@@ -1,0 +1,50 @@
+
+# Ignorar directorios de entornos virtuales
+venv/
+env/
+
+# Ignorar archivos y directorios de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Ignorar archivos de cachés y build
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
+build/
+dist/
+*.egg-info/
+
+# Ignorar archivos de configuraciones locales y secretos
+.env
+.env.*
+config.py
+local_settings.py
+secret_key.py
+
+# Ignorar logs y archivos temporales
+*.log
+*.tmp
+
+# Ignorará archivos de IDE (ejemplos)
+.idea/
+.vscode/
+*.swp
+
+# Ignorar bases de datos locales
+db.sqlite3
+*.sqlite
+*.sqlite3-journal
+
+# Ignorar archivos de lock (Pipenv, Poetry, etc.)
+Pipfile.lock
+poetry.lock
+pdm.lock
+uv.lock
+
+# Ignorar compilaciones (PyInstaller)
+*.exe
+*.app
