@@ -1,131 +1,163 @@
 import threading
 import subprocess
 import requests
+import os
+import json
 from flask import Flask, jsonify, request, send_from_directory
 from concurrent.futures import ThreadPoolExecutor
+from dotenv import load_dotenv
 
+# Importación de tus clases de scraping
 from ghio_sri_bot_worker.sri_bot.ghsync_supercias import GHSyncSupercias
 from ghio_sri_bot_worker.sri_bot.ghsync_juditial import GHSyncJuditial
 from ghio_sri_bot_worker.sri_bot.ghsync_sri_v2 import GHSyncSRI_V2
-
-import os
-import json
-
-from dotenv import load_dotenv
 
 # Carga las variables del archivo .env
 load_dotenv()
 
 LOCAL_FILES_DIR = os.getenv('PATH_FILES')
-
 app = Flask(__name__)
 
-def worker_scraper(ClaseScraper, identification, id_consulta, nombre, username_sri, password_sri):
-    """
-    Función que ejecuta la lógica de la clase y retorna el resultado estructurado
-    """
-    # Configuramos una ruta única para los PDF de esta consulta
-    path_archivos = f"/tmp/files"
-    print("identification es: ", identification)
-    print("Nombre es: ", nombre)
+# --- LÓGICA DEL WORKER ---
 
-    extra_ci = identification
-    # Instanciamos el manager (usando tu lógica actual)
-    manager = ClaseScraper(
-        uid=id_consulta,
-        identification= extra_ci,
-        username=username_sri,
-        password = password_sri,
-        nombre = nombre,
-        extra_ci = extra_ci,
-        selenium_url='http://localhost:4444/wd/hub',
-        solver_apikey=os.getenv('API_KEY_2CAPTCHA'),
-        home_path=path_archivos
-    )
+def worker_scraper(config):
+    """
+    Función que recibe un diccionario con la clase y sus parámetros específicos.
+    """
+    ClaseScraper = config['class']
+    params = config['params']
+    
+    # Parámetros técnicos comunes (no necesitan venir del request de usuario)
+    params.update({
+        "solver_apikey": os.getenv('API_KEY_2CAPTCHA'),
+        "home_path": "/tmp/files"
+    })
+
+    print(f"Iniciando {ClaseScraper.__name__} para: {params.get('identification')}")
+
+    # Instanciamos dinámicamente usando desempaquetado de diccionarios (**)
+    manager = ClaseScraper(**params)
 
     try:
-        # Navegación inicial (como hacías en el main)
-        # url_sitio = "URL_ESPECIFICA_DE_CADA_CLASE" # Podrías tener esto como atributo de clase
-        # manager.driver.get(url_sitio)
-        
-        # Ejecución
         exito = manager.run()
+        # Intentamos obtener los datos si el scraper los generó
         data = getattr(manager, '_data', {})
         
-        response = {
+        return {
             "scraper": ClaseScraper.__name__,
             "exito": exito,
-            "state": manager.state,
-            "action": manager.action,
-            "archivos_path": path_archivos,
+            "state": getattr(manager, 'state', 'N/A'),
+            "action": getattr(manager, 'action', 'N/A'),
             "data": data
         }
-        return response
     except Exception as e:
-        return {"scraper": ClaseScraper.__name__, "exito": False, "error": str(e)}
+        print(f"Error en {ClaseScraper.__name__}: {str(e)}")
+        return {
+            "scraper": ClaseScraper.__name__, 
+            "exito": False, 
+            "error": str(e)
+        }
     finally:
-        manager.close() # Importante para liberar el nodo en Docker
+        # Liberar recursos de Selenium/Docker
+        if hasattr(manager, 'close'):
+            manager.close()
 
-def orquestar_y_notificar(lista_clases, identification, webhook_url, id_consulta, nombre, username_sri, password_sri):
-    # Ejecutamos en paralelo (ThreadPoolExecutor es ideal para Selenium)
-    with ThreadPoolExecutor(max_workers=len(lista_clases)) as executor:
-        futuros = [
-            executor.submit(worker_scraper, cls, identification, id_consulta, nombre, username_sri, password_sri) 
-            for cls in lista_clases
-        ]
+# --- ORQUESTADOR ---
+
+def orquestar_y_notificar(configuraciones, webhook_url, id_consulta, identificacion):
+    """
+    Ejecuta los scrapers en paralelo y envía el resultado al webhook.
+    """
+    
+    
+    with ThreadPoolExecutor(max_workers=len(configuraciones)) as executor:
+        # Mapeamos cada configuración a un hilo
+        futuros = [executor.submit(worker_scraper, conf) for conf in configuraciones]
         resultados = [f.result() for f in futuros]
 
-    # Webhook final con todos los objetos de respuesta
+    # Payload consolidado para el Webhook
     payload = {
         "id_consulta": id_consulta,
-        "identificacion": identification,
+        "identificacion": identificacion,
         "status_general": "COMPLETADO",
         "resultados": resultados
     }
 
-    print("Enviando payload al webhook:", json.dumps(payload, indent=4))
-    
-    requests.post(webhook_url, json=payload, timeout=15)
+    print(f"Enviando resultados al webhook: {webhook_url}")
+    try:
+        requests.post(webhook_url, json=payload, timeout=20)
+    except Exception as e:
+        print(f"Error enviando el webhook: {e}")
 
+# --- RUTAS FLASK ---
 
 @app.route('/tmp/files/<path:path_file>')
 def serve_scraping_file(path_file):
-    # LOCAL_FILES_DIR = "/Users/josecruz/Documents/SeleniumProjects/odoo-ghio-server/files"
-    
-    # 1. Verificar si el archivo existe para debuggear (puedes quitarlo luego)
-    file_path = os.path.join(f"{LOCAL_FILES_DIR}", path_file)
-    print(f"Buscando archivo en: {file_path}")
-    
+    file_path = os.path.join(str(LOCAL_FILES_DIR), path_file)
     if not os.path.exists(file_path):
-        return f"Archivo no encontrado en el sistema: {file_path}", 404
-
-    # 2. Servir el archivo
+        return f"Archivo no encontrado: {file_path}", 404
     return send_from_directory(LOCAL_FILES_DIR, path_file)
-
 
 @app.route('/api/v1/consultar', methods=['POST'])
 def endpoint_consultar():
     data = request.json
+    
+    # Extraemos datos del body
     identificacion = data.get("identificacion")
     id_consulta = data.get("id_consulta")
     webhook = data.get("webhook_url")
     nombre = data.get("nombre")
-    username_sri = data.get("username_sri")
-    password_sri = data.get("password_sri")
-    # Lista de tus clases de manager
-    clases_a_ejecutar = [ GHSyncSRI_V2]
-    # clases_a_ejecutar = [GHSyncSRI_V2]
+    # user_sri = data.get("username_sri")
+    # pass_sri = data.get("password_sri")
 
-    # Disparar hilo principal para no bloquear la respuesta HTTP
+    # --- DEFINICIÓN DE CONFIGURACIONES ESPECÍFICAS ---
+    # Aquí es donde instancias cada uno con sus propios parámetros
+    configuraciones = [
+        {
+            "class": GHSyncSupercias,
+            "params": {
+                "uid": id_consulta,
+                "identification": identificacion,
+                "nombre": nombre,
+                "extra_ci": identificacion,
+                "selenium_url": f'http://localhost:4445/wd/hub',
+            }
+        },
+        {
+            "class": GHSyncSRI_V2,
+            "params": {
+                "uid": id_consulta,
+                "identification": identificacion,
+                "nombre": nombre,
+                "extra_ci": identificacion,
+                "selenium_url": f'http://localhost:4444/wd/hub',
+            }
+        },
+        {
+            "class": GHSyncJuditial,
+            "params": {
+                "uid": id_consulta,
+                "identification": identificacion,
+                "nombre": nombre,
+                "extra_ci": identificacion,
+                "selenium_url": f'http://localhost:4446/wd/hub',
+            }
+        },
+        # Puedes agregar GHSyncJuditial aquí si lo necesitas
+    ]
+
+    # Disparar el hilo principal para no bloquear la respuesta HTTP 202
     threading.Thread(
         target=orquestar_y_notificar, 
-        args=(clases_a_ejecutar, identificacion, webhook, id_consulta, nombre, username_sri, password_sri)
+        args=(configuraciones, webhook, id_consulta, identificacion)
     ).start()
 
     return jsonify({
-        "mensaje": "Consulta iniciada",
+        "mensaje": "Proceso de scraping iniciado en segundo plano",
         "id_seguimiento": id_consulta
     }), 202
 
 if __name__ == '__main__':
+    # Nota: debug=True en hilos puede causar ejecuciones dobles, 
+    # en producción usar False.
     app.run(host='0.0.0.0', port=5001, debug=True)

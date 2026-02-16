@@ -12,6 +12,11 @@ from ghio_sri_bot_worker.sri_bot.ghsync_sri_v2 import GHSyncSRI_V2
 import time
 import os
 from dotenv import load_dotenv
+import sys
+import io
+
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 # Carga las variables del archivo .env
 load_dotenv()
@@ -24,8 +29,8 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('test_search.log'),  # Guarda en archivo
-        logging.StreamHandler()  # También en consola
+        logging.FileHandler('test_search.log', encoding='utf-8'),  # Guarda en archivo
+        logging.StreamHandler(sys.stdout)  # También en consola
     ]
 )
 logger = logging.getLogger(__name__)
@@ -43,13 +48,14 @@ def main():
         password="Armagedon@97",
         extra_ci="1791924037001",
         selenium_url='http://localhost:4444/wd/hub',  # Cambia si usas local
-        solver_apikey=api_key_capsolver
+        solver_apikey=api_key_2captcha
     )
 
     try:
         # manager.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
         # Navegar a la URL del sitio
-        manager.driver.get("https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil")
+        # manager.driver.get("https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil")
+        manager.driver.get("https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc")
         # manager.driver.get("https://accounts.google.com/")
         print("Navegando a la URL del sitio...")
         

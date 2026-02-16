@@ -1,1 +1,4 @@
 odoo-ghio-server/supercias_files/
+extension/
+odoo-ghio-server/sessions/
+web_scrap_selenium/venv2/

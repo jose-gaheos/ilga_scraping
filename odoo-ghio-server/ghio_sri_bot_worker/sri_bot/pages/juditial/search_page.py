@@ -71,11 +71,24 @@ class SearchPage(BasePage):
             return False
         
         self.search_button_click()
-            
+
+        xpath_mensaje = "//div[contains(@class, 'mat-mdc-snack-bar-label') and contains(., 'La consulta no devolvió resultados')]"
+
+        if self.wait_for_element_visible(xpath_mensaje, by=By.XPATH, timeout=const.TIMEOUT_LONG):
+            self.action = const.ACTION_HOME, const.STATE_INITIAL
+            self.info("No se encontraron procesos judiciales")
+            return True
+
         if self.wait_for_element_visible(const.JF_CLASS_LIST_CAUSES, by=By.CLASS_NAME, timeout=const.TIMEOUT_LONG):
             self.action = const.ACTION_HOME, const.STATE_INITIAL
             self.info("Authentication successful")
             return True
+        
+       
+    
+        # try:
+        #     elemento_mensaje = wait.until(EC.visibility_of_element_located((By.XPATH, xpath_mensaje)))
+        #     print("¡Mensaje detectado!: " + elemento_mensaje.text)
 
         self.error("Authentication failed")
         self.state = const.STATE_FAILED

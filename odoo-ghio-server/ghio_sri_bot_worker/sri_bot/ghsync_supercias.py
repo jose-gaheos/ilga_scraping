@@ -195,7 +195,6 @@ class GHSyncSupercias:
         return res
 
     def run(self):
-        self.driver.get(self._url)
         if not SearchPage(self, self._identification).run():
             return False
         if not InformationSupercias(self, self._data, self._downloads_path).run():

@@ -10,7 +10,7 @@
 
 BROWSER_OPTIONS = [
     # "--headless",
-    "--remote-debugging-port=9222",
+    #"--remote-debugging-port=9222",
     "--no-sandbox",
     "--disable-dev-shm-usage",
     "--disable-blink-features=AutomationControlled",
@@ -19,7 +19,8 @@ BROWSER_OPTIONS = [
     "--lang=es-EC",
     "start-maximized",
     "--disable-infobars",
-    "--window-size=1920,1080"
+    "--window-size=1920,1080",
+    #"--headless=new"
 ]
 
 BROWSER_PREFS = {

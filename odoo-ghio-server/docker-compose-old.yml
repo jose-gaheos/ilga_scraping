@@ -1,0 +1,54 @@
+# version: "3"
+# services:
+#   # El "Cerebro" que coordina todo
+#   selenium-hub:
+#     image: selenium/hub:4.16.1
+#     container_name: selenium-hub
+#     platform: linux/amd64  # <--- AÑADE ESTO
+#     ports:
+#       - "4444:4444"
+
+#   # Nodo ESPECIAL para el SRI (Con tus cookies de Google)
+#   chrome_sri:
+#     image: selenium/node-chrome:4.16.1
+#     container_name: chrome_node_sri
+#     platform: linux/amd64  # <--- AÑADE ESTO
+#     shm_size: 2gb
+#     ports:
+#       - "5555:5555" # Abre el puerto para comunicación interna
+#     depends_on:
+#       - selenium-hub
+#     environment:
+#       - SE_EVENT_BUS_HOST=selenium-hub
+#       - SE_EVENT_BUS_PUBLISH_PORT=4442
+#       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+#       - SE_NODE_MAX_SESSIONS=1
+#       - SE_NODE_GRID_URL=http://chrome_node_sri:5555
+#       - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+#       - SE_NODE_MAX_SESSIONS=1
+#       - SE_NODE_DETECT_DRIVERS=false
+#       - SE_NODE_STEREOTYPE_CONFIG=[{"stereotype":{"browserName":"chrome","ghio:node_id":"sri_persistent"},"maxInstances":1}]
+
+#     volumes:
+#       - ./cookies:/tmp/cookies/chrome_profile
+#       - ./files:/tmp/files
+
+#   # Nodos GENERALES para Supercias y Judicial (Sin cookies, escalables)
+#   chrome_general:
+#     image: selenium/node-chrome:4.16.1
+#     platform: linux/amd64  # <--- AÑADE ESTO
+#     shm_size: 2gb
+#     depends_on:
+#       - selenium-hub
+#     environment:
+#       - SE_EVENT_BUS_HOST=selenium-hub
+#       - SE_EVENT_BUS_PUBLISH_PORT=4442
+#       - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+#       - SE_NODE_MAX_SESSIONS=1
+#     volumes:
+#       - ./files:/tmp/files
+#     # Esto levantará 2 nodos adicionales automáticamente
+#     deploy:
+#       replicas: 2
+
+

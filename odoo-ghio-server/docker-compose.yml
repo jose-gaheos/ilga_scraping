@@ -1,52 +1,35 @@
-version: "3"
+version: '3.8'
+
 services:
-  # El "Cerebro" que coordina todo
-  selenium-hub:
-    image: selenium/hub:4.16.1
-    container_name: selenium-hub
-    platform: linux/amd64  # <--- AÑADE ESTO
+  # Nodo especializado para el SRI (Score más alto requerido)
+  sri_bot:
+    image: selenium/standalone-chrome:latest
+    container_name: bot_sri_session
     ports:
-      - "4444:4444"
-
-  # Nodo ESPECIAL para el SRI (Con tus cookies de Google)
-  chrome_sri:
-    image: selenium/node-chrome:4.16.1
-    container_name: chrome_node_sri
-    platform: linux/amd64  # <--- AÑADE ESTO
+      - "4444:4444" # API Selenium
+      - "7900:7900" # Interfaz Visual (VNC)
+    volumes:
+      - ./sessions/sri:/home/seluser/.config/google-chrome
     shm_size: 2gb
+
+  # Nodo para Superintendencia de Compañías
+  supercias_bot:
+    image: selenium/standalone-chrome:latest
+    container_name: bot_supercias_session 
     ports:
-      - "5555:5555" # Abre el puerto para comunicación interna
-    depends_on:
-      - selenium-hub
-    environment:
-      - SE_EVENT_BUS_HOST=selenium-hub
-      - SE_EVENT_BUS_PUBLISH_PORT=4442
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
-      - SE_NODE_MAX_SESSIONS=1
-      - SE_NODE_GRID_URL=http://chrome_node_sri:5555
-      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
-      - SE_NODE_MAX_SESSIONS=1
-      - SE_NODE_DETECT_DRIVERS=false
-      - SE_NODE_STEREOTYPE_CONFIG=[{"stereotype":{"browserName":"chrome","ghio:node_id":"sri_persistent"},"maxInstances":1}]
-
+      - "4445:4444" # API Selenium
+      - "7901:7900" # Interfaz Visual (VNC)
     volumes:
-      - /Users/josecruz/Documents/SeleniumProjects/odoo-ghio-server/cookies:/tmp/cookies/chrome_profile
-      - /Users/josecruz/Documents/SeleniumProjects/odoo-ghio-server/files:/tmp/files
-
-  # Nodos GENERALES para Supercias y Judicial (Sin cookies, escalables)
-  chrome_general:
-    image: selenium/node-chrome:4.16.1
-    platform: linux/amd64  # <--- AÑADE ESTO
+      - ./sessions/supercias:/home/seluser/.config/google-chrome
     shm_size: 2gb
-    depends_on:
-      - selenium-hub
-    environment:
-      - SE_EVENT_BUS_HOST=selenium-hub
-      - SE_EVENT_BUS_PUBLISH_PORT=4442
-      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
-      - SE_NODE_MAX_SESSIONS=1
+
+  # Nodo para Función Judicial
+  judicial_bot:
+    image: selenium/standalone-chrome:latest
+    container_name: bot_judicial_session
+    ports:
+      - "4446:4444" # API Selenium
+      - "7902:7900" # Interfaz Visual (VNC)
     volumes:
-      - /Users/josecruz/Documents/SeleniumProjects/odoo-ghio-server/files:/tmp/files
-    # Esto levantará 2 nodos adicionales automáticamente
-    deploy:
-      replicas: 2
+      - ./sessions/judicial:/home/seluser/.config/google-chrome
+    shm_size: 2gb

@@ -34,18 +34,24 @@ class CausesPage(BasePage):
 
         self.action = const.ACTION_HOME, const.STATE_PENDING
 
+        xpath_mensaje = "//div[contains(@class, 'mat-mdc-snack-bar-label') and contains(., 'La consulta no devolvió resultados')]"
+
+        if self.wait_for_element_visible(xpath_mensaje, by=By.XPATH, timeout=const.TIMEOUT_LONG):
+            self.info("No se encontraron procesos judiciales")
+            self._data["causas"] = []
+            self._data["message"] = "No se encontraron procesos"
+            self.action = const.ACTION_HOME, const.STATE_SUCCESS
+            return True
+
         if causes := self.find_elements(const.JF_CLASS_LIST_CAUSES, by=By.CLASS_NAME):
             self.action = const.ACTION_HOME, const.STATE_READY
             if list_causes := self.get_list_causes(list_causes=causes):
-                self._data['causes'] = list_causes
+                self._data['causas'] = list_causes
+                self._data['message'] = f'Se encontraron {len(list_causes)} procesos'
                 self.info(f"Causes found: {json.dumps(list_causes)}")
                 self.action = const.ACTION_HOME, const.STATE_SUCCESS
 
             return True
-        
-        # if self.ensure_action(const.ACTION_HOME, const.STATE_SUCCESS):
-        #     print("Action or state not valid after waiting for causes list")
-        #     return False
 
         self.error("Home page error")
         self.state = const.STATE_FAILED

@@ -24,13 +24,13 @@ import json
 import capsolver
 _logger = getLogger(__name__)
 
-# def get_capsolver_solution(api_key, url, site_key):
-#     return capsolver.solve({
-#     "type": "ReCaptchaV3TaskProxyLess",
-#     "websiteURL": url,
-#     "websiteKey": site_key,
-#     "minScore": 0.7
-# })
+def get_capsolver_solution(api_key, url, site_key):
+    return capsolver.solve({
+    "type": "ReCaptchaV3TaskProxyLess",
+    "websiteURL": url,
+    "websiteKey": site_key,
+    "minScore": 0.7
+})
 
 # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # # 2. Definir la carpeta de descargas dentro de tu proyecto
@@ -44,8 +44,8 @@ class GHSyncSRI_V2:
     def __init__(
             self,
             uid,
-            username,
-            password,
+            # username,
+            # password,
             extra_ci,
             selenium_url='http://localhost:4444/wd/hub',
             home_path='/tmp/files',
@@ -61,8 +61,8 @@ class GHSyncSRI_V2:
         self._selenium_url = selenium_url
 
         # SRI credentials
-        self._username = username
-        self._password = password
+        # self._username = username
+        # self._password = password
         self._extra_ci = extra_ci
 
         # Paths
@@ -78,7 +78,7 @@ class GHSyncSRI_V2:
         self._logger = _logger
 
         # State
-        self._action = const.ACTION_LOGIN
+        self._action = const.ACTION_HOME
         self._state = const.STATE_INITIAL
 
         # Selenium
@@ -93,7 +93,7 @@ class GHSyncSRI_V2:
 
         # 2Captcha
         self.solver = TwoCaptcha(solver_apikey) if solver_apikey else None
-        #Capsoler
+        # Capsoler
         # self.solver = get_capsolver_solution(
         #     solver_apikey,
         #     self.driver.current_url,
@@ -102,8 +102,8 @@ class GHSyncSRI_V2:
 
         self._data = {}
 
-        self._url = "https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil"
-
+        # self._url = "https://srienlinea.sri.gob.ec/sri-en-linea/contribuyente/perfil"
+        self._url = "https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc"
         # Start
         # self.state = const.STATE_READY
 
@@ -214,9 +214,12 @@ class GHSyncSRI_V2:
         return res
 
     def run(self):
-        self.driver.get(self._url)
-        if not LoginPage(self, self._username, self._password).run():
-            return False
+        
+        # self.driver.get(self._url)
+        # print("Navegador listo. Entra a http://localhost:7900 y loguéate.")
+        # input(">>> Presiona ENTER cuando hayas terminado el login para continuar...")
+        # if not LoginPage(self, self._username, self._password).run():
+        #     return False
         if not RucPage(self, self._data, self._extra_ci).run():
             return False
         print('Data: :',json.dumps(self._data, indent=4, ensure_ascii=False))

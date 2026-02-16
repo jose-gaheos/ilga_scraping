@@ -19,6 +19,11 @@ import time
 import capsolver
 import os
 import json
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.common.exceptions import NoSuchElementException
+from ...core.capsolver import CapSolverService
+
+import random
 
 from dotenv import load_dotenv
 
@@ -26,6 +31,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 capsolver.api_key = os.getenv('API_KEY_CAPSOLVER')
+api_key_capsolver = os.getenv('API_KEY_CAPSOLVER')
 
 class RucPage(BasePage):
     def __init__(self, manager, data, extra_ci=None, solver=None):
@@ -36,54 +42,44 @@ class RucPage(BasePage):
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         }
         self._data = data
-    
+        self._capsolver = CapSolverService(api_key_capsolver)
+ 
 
     def run(self):
+
+        if not self.open(const.CONSULTA_RUC_SRI_URL):
+            self.action = const.ACTION_HOME, const.STATE_FAILED
+            return False
+
+        # EL TRUCO: El script se detiene aquí
+        # print("Navegador listo. Entra a http://localhost:7900 y loguéate.")
+        # input(">>> Presiona ENTER cuando hayas terminado el login para continuar...")
         # self.inyectar_scripts_antideteteccion()
+
         if not self.ensure_action(const.ACTION_HOME, const.STATE_INITIAL):
             print("Action or state not valid for SearchPage Juditial Function")
             return False
 
         self.action = const.ACTION_HOME, const.STATE_PENDING
-        self.wait(const.AWAIT_OPEN)
-        if button_menu_ruc := self.wait_for_element(const.SRI_ID_BUTTON_MENU, by=By.ID, timeout=const.TIMEOUT_MINIMUM):
-            self.move(button_menu_ruc)
-            self.click(button_menu_ruc)
-        else:
-            self.error('Button menu not found')
-            self.state = const.STATE_INVALID
-            return False
-        
-        self.wait(const.AWAIT_OPEN)
-        if menu_ruc := self.wait_for_element(const.SRI_XPATH_MENU_ITEM_RUC, timeout=const.TIMEOUT_MINIMUM):
-            self.move(menu_ruc)
-            self.click(menu_ruc)
-        else:
-            self.error('RUC menu item not found')
-            self.state = const.STATE_INVALID
-            return False
-        
-        self.wait(const.AWAIT_OPEN)
+       
+        selector_ruc = '[aria-label="Seleccionar búsqueda por RUC"]'
 
-        if item_ruc := self.wait_for_element_clickable(const.SRI_XPATH_MENU_ITEM_CONSULTA, timeout=const.TIMEOUT_MINIMUM):
-            self.move(item_ruc)
-            self.click(item_ruc)
-            self.wait(const.AWAIT_OPEN)
-            self.state = const.STATE_READY
-        else:
-            self.error('RUC consultation item not found')
-            self.state = const.STATE_INVALID
-            return False
         
-        self.wait(const.AWAIT_OPEN)
+        if ruc_button := self.wait_for_element_clickable(selector_ruc, by=By.CSS_SELECTOR):
+            self.move(ruc_button)
+            # self.random_move(ruc_button)
+            self.click(ruc_button)
+            self.wait(const.AWAIT_SHORT)
+        
 
-        if input_ruc := self.find_element(const.SRI_ID_INPUT_SEARCH, by=By.ID):
-            self.move(input_ruc)
-            self.wait(const.AWAIT_OPEN)
+        if input_ruc := self.wait_for_element(const.SRI_ID_INPUT_SEARCH, by=By.ID):
+            # self.move(input_ruc)
+            self.wait(const.AWAIT_MEDIUM)
+            self.random_move(input_ruc)
             self.click(input_ruc)
             if self._extra_ci:
                 self.send_keys(input_ruc, self._extra_ci)
-                # escribir_con_error_humano(elemento= input_ruc, texto = self._extra_ci, error_delete=-2)
+                #escribir_con_error_humano(elemento= input_ruc, texto = self._extra_ci, error_delete=-1)
             else:
                 self.info(f"No extra CI provided for RUC search: {self._extra_ci}")
                 self.state = const.STATE_INVALID
@@ -93,42 +89,18 @@ class RucPage(BasePage):
             self.state = const.STATE_INVALID
             return False
         
-        # site_key = self.get_site_key()
-
-        # if not site_key:
-        #     self.error("Site key not found")
-        #     self.state = const.STATE_INVALID
-        #     return False
-        
-        # self.action = const.ACTION_RECAPTCHA, const.STATE_PENDING
-        
-        # if not self.resolve_recaptcha_v3(site_key=site_key):
-        #     self.error("Recaptcha could not be resolved")
-        #     self.state = const.STATE_ERROR
-        #     return False
-        
-        # if not self.ensure_action(const.ACTION_RECAPTCHA, const.STATE_SUCCESS):
-        #     print("Action or state not valid before clicking search button")
-        #     return False
-        
-        # if self.consultar_con_solver():
-        #     self.info("RUC data retrieved successfully")
-        #     self.state = const.STATE_SUCCESS
-        #     # Aquí puedes agregar la lógica para extraer y almacenar los datos del RUC
-        #     return True
 
         if not self.consultar_con_reintento(max_intentos=5):
-            self.info("RUC data retrieved error after retries")
-            self.state = const.STATE_ERROR
-            return False
+                self.info("RUC data retrieved error after retries")
+                self.state = const.STATE_ERROR
+                return False
         
-
-        self.info("RUC data retrieved successfully")
-        self.state = const.STATE_READY
-
         if self.extraer_datos_sri() and self.ensure_action(const.ACTION_HOME, const.STATE_SUCCESS):
             self.info("RUC data extraction completed successfully")
             return True
+
+        # self.info("RUC data retrieved successfully")
+        
         
         # if button_search := self.wait_for_element_clickable(const.SRI_XPATH_BUTTON_SEARCH):
         #     self.move(button_search)
@@ -191,7 +163,7 @@ class RucPage(BasePage):
                 try:
                     # El valor suele estar en el siguiente div hermano o en un span cercano
                     # Usamos una ruta relativa desde el título
-                    valor = self.find_element(const.SRI_XPATH_DIV_VALUE, parent=titulo_el).text.strip()
+                    
                     # Limpieza para el caso del Representante Legal que tiene sub-campos
                     if "Nombre/Razón Social" in titulo:
                         # Caso específico para la estructura anidada del representante
@@ -199,7 +171,14 @@ class RucPage(BasePage):
                     elif "Identificación" in titulo:
                         datos["Representante_ID"] = self.find_element("./following-sibling::div[1]", parent=titulo_el).text.strip()
                     else:
-                        datos[titulo] = valor
+                        try:
+                            if valor := titulo_el.find_element(const.SRI_XPATH_DIV_VALUE, by=By.XPATH).text.strip():
+                                datos[titulo] = valor
+                            # Si lo encuentra, haces algo con él aquí
+                        except NoSuchElementException:
+                            # Si no lo encuentra, ignora el error y continúa
+                            pass
+                       
                 except:
                     continue
 
@@ -220,106 +199,89 @@ class RucPage(BasePage):
             self.error(f"Error extracting RUC data: {str(e)}")
             self.state = const.STATE_ERROR
             return False
-    
-    def redirect_to_request_ruc(self, url):
-        try:
-            self.driver.get(url)
-            self.wait(const.AWAIT_OPEN)
-            return True
-        except Exception as e:
-            self.error(f"Error redirecting to RUC request page: {str(e)}")
-            self.state = const.STATE_ERROR
-            return False
+        
+
+    def random_move(self, target_element=None):
+        action = ActionChains(self.driver)
+        # Mover a un punto aleatorio cerca del botón antes de clickear
+        action.move_by_offset(random.randint(10, 100), random.randint(10, 100))
+        action.pause(random.uniform(0.5, 1.5))
+        action.click(target_element).perform()
+
+    def check_bot_status(self):
+        # 1. SNEAKY: Prueba de detección de Selenium/WebDriver
+        print("Verificando en SNEAKY...")
+        self.driver.get("https://pixelscan.net/")
+        time.sleep(5) # Espera a que termine el análisis
+        
+        # 2. BROWSERLEAKS: Prueba de huella digital (IP, WebGL, RTC)
+        print("Verificando en BrowserLeaks...")
+        self.driver.execute_script("window.open('https://browserleaks.com/ip', '_blank');")
+        time.sleep(3)
+
+        # 3. ANTICAPTCHA / CAPSOLVER CHECK: Ver si la extensión está inyectando código
+        print("Verificando CapSolver Score...")
+        self.driver.execute_script("window.open('https://antcpt.com/score_detector/', '_blank');")
+        
+        print("Revisa las pestañas abiertas para ver tu calificación.")
+
+    def verificar_deteccion(self):
+        print("\n--- AUDITORÍA DE INVISIBILIDAD ---")
+        self.driver.execute_script("window.open('https://bot.sannysoft.com/', '_blank');")
+        time.sleep(5) 
+
+        resultados = self.driver.execute_script("""
+            return {
+                "webdriver": navigator.webdriver,
+                "plugins": navigator.plugins.length,
+                "languages": navigator.languages
+            };
+        """)
+
+        print(f"1. Webdriver: {resultados['webdriver']}")
+        print(f"2. Plugins: {resultados['plugins']}")
+        print(f"3. Idiomas: {resultados['languages']}")
+           
         
     def consultar_con_reintento(self, max_intentos=5):
         intentos = 0
         xpath_error = "//span[contains(@class, 'ui-messages-detail') and contains(text(), 'Puntaje bajo')]"
         
         while intentos < max_intentos:
-            # Simular un movimiento errático de mouse antes de consultar
-            
-            self.wait(const.AWAIT_LOCATE_SHORT)
-            # 1. Referenciar y hacer clic (Tu código actual)
-            if boton := self.wait_for_element_clickable(const.SRI_XPATH_BUTTON_SEARCH):
-                self.move(boton)
-                self.click(boton)
-                print(f"🚀 Intento {intentos + 1}: Clic en Consultar enviado.")
+            element = self.driver.find_element(By.XPATH, "//button[contains(@class, 'ui-button')]//span[text()='Consultar']")
+
+            # Mover el mouse al botón para que el script de Akamai registre actividad real
+            ActionChains(self.driver).move_to_element(element).pause(0.5).perform()
+            self.driver.execute_script("arguments[0].click();", element)
+            self.info(f"🚀 Intento {intentos + 1}: Clic en Consultar enviado.")
 
             self.wait(const.AWAIT_SHORT)
             
-            # 3. Verificar si apareció el error de puntaje bajo
+            #Verificar si apareció el error de puntaje bajo
             mensajes_error = self.find_elements(xpath_error)
             
             if len(mensajes_error) > 0:
                 error_texto = mensajes_error[0].text
                 self.warn(f"⚠️ Falló: {error_texto}. Reintentando clic...")
                 
-                # Opcional: Limpiar el mensaje de error anterior para no confundir al bot
-                # self._driver.execute_script("document.querySelectorAll('.ui-messages-close').forEach(el => el.click());")
                 intentos += 1
-                
-                 # Pausa táctica antes del siguiente clic
             else:
                 # Si NO hay error, verificamos si realmente cargó la info del contribuyente
                 if self.wait_for_element(const.SRI_XPATH_MORE_STABLISHMENTS, timeout=const.TIMEOUT_MINIMUM):
                     self.info("✅ Consulta exitosa sin errores.")
+                    self.action = const.ACTION_HOME, const.STATE_SUCCESS
                     return True # Éxito total
                 
+                self.wait(const.AWAIT_SHORT)
                 intentos += 1
 
         self.info("❌ Se agotaron los intentos. El SRI bloqueó el token permanentemente.")
         return False
-    
-    def consultar_con_solver(self):
-        site_key = self.get_site_key()
-        token_valido = self.resolver_capsolver(site_key=site_key)
-        
-        if token_valido:
-            script = f"""
-                (function() {{
-                    window.token_bypass_sri = '{token_valido}';
-                    
-                    // 1. Llenar el campo oculto
-                    var fields = document.getElementsByName('g-recaptcha-response');
-                    for (var i = 0; i < fields.length; i++) {{
-                        fields[i].value = window.token_bypass_sri;
-                    }}
-
-                    // 2. Parchear con referencia global
-                    if (window.grecaptcha && window.grecaptcha.enterprise) {{
-                        window.grecaptcha.enterprise.execute = function(siteKey, options) {{
-                            console.log('SRI solicitó token para:', options.action);
-                            // Retornamos el valor global para evitar el ReferenceError
-                            return Promise.resolve(window.token_bypass_sri);
-                        }};
-                        console.log('✅ Parche aplicado sin errores de referencia.');
-                    }}
-                }})();
-            """
-            self.driver.execute_script(script)
-            time.sleep(2)
-            # 5. Clic final mediante JavaScript
-            self.info("🚀 Enviando consulta al SRI...")
-            # 3. Hacer clic en el botón Consultar
-            boton = self.driver.find_element(By.XPATH, "//button[contains(., 'Consultar')]")
-            self.driver.execute_script("arguments[0].click();", boton)
-
-        
-            time.sleep(2)
-            xpath_error = "//span[contains(@class, 'ui-messages-detail') and contains(text(), 'Puntaje bajo')]"
-            # mensajes_error = self._driver.find_elements(By.XPATH, xpath_error)
-            mensajes_error = self.find_elements(xpath_error)
-
-            if len(mensajes_error) > 0:
-                error_texto = mensajes_error[0].text
-                self.info(f"⚠️ Falló: {error_texto}. Reintentando clic...")
-
-            if self.check_if_result_exists():
-                return True
-            return False
-        return False
 
     def resolve_recaptcha_v3(self, site_key):
+        self.driver.execute_script("window.scrollTo(0, 500);")
+        time.sleep(0.5)
+        self.driver.execute_script("window.scrollTo(0, 0);")
         self.info("\n[!] Esperando resolución del captcha...")
         self.info(f"Current url for recaptcha: {self.driver.current_url}")
         response = self._solver.recaptcha(
@@ -339,13 +301,15 @@ class RucPage(BasePage):
             self.info(f"[+] Captcha resuelto manualmente: {token[:10]}") 
             # self.driver.execute_script(self.get_script_inject_recapctha_token(token=token))
             self.action = const.ACTION_RECAPTCHA, const.STATE_SUCCESS
-            return True
+            return token or None
                 
         return False
     
     def check_if_result_exists(self):
     # Buscamos por el nombre del tag específico
         results = self.find_elements("sri-mostrar-contribuyente", by=By.TAG_NAME)
+        if len(results) > 0:
+            self.info("Se encontraron resultados....")
         return len(results) > 0
 
     def get_site_key(self):
@@ -368,50 +332,152 @@ class RucPage(BasePage):
             self.error(f"[-] Error al extraer Site Key: {e}")
             self.state = const.STATE_ERROR
             return None
-        
-    def verificar_deteccion(self):
-        print("\n--- AUDITORÍA DE INVISIBILIDAD ---")
-        self.driver.get("https://bot.sannysoft.com/")
-        time.sleep(5) 
 
-        resultados = self.driver.execute_script("""
-            return {
-                "webdriver": navigator.webdriver,
-                "plugins": navigator.plugins.length,
-                "languages": navigator.languages
-            };
-        """)
 
-        print(f"1. Webdriver: {resultados['webdriver']}")
-        print(f"2. Plugins: {resultados['plugins']}")
-        print(f"3. Idiomas: {resultados['languages']}")
-
-    def resolver_capsolver(self, site_key):
+    def resolver_capsolver(self, site_key, ruc):
         try:
-            ua_real = self.driver.execute_script("return navigator.userAgent")
-            # Creamos la tarea para reCAPTCHA v3 Enterprise
-            solution = capsolver.solve({
-                "type": "ReCaptchaV3EnterpriseTaskProxyLess",
-                "websiteURL": self.driver.current_url, # URL exacta del SRI
-                "websiteKey": site_key,
-                "pageAction": "sri_consulta_publica_ruc", # Cambiar según la acción de la página
-                "minScore": 0.9, # El SRI suele ser estricto y pide score alto,
-                "userAgent": ua_real
-            })
+            # 1. Crear la tarea y obtener token
+            task_id = self._capsolver.create_task(
+                website_url="https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc",
+                website_key=site_key,
+                task_type="ReCaptchaV3EnterpriseTaskProxyLess",
+                # page_action=""
+                page_action="sri_consulta_publica_ruc"
+            )
+            token_valido = self._capsolver.get_task_result(task_id)
+            self.info(f"El token obtenido es: {token_valido[:30]}...")
+
+            # 2. Script mejorado con Reintentos y Visibilidad Forzada
+            # Combinamos debug y final en uno solo para evitar múltiples ejecuciones de red
+            script_final = f"""
+            (function() {{
+                const token = '{token_valido}';
+                console.log('--- Iniciando inyección de CapSolver ---');
+
+                function inyectar() {{
+                    // 1. Llenar inputs ocultos (g-recaptcha-response)
+                    const targets = document.querySelectorAll('textarea[name="g-recaptcha-response"], input[name="g-recaptcha-response"]');
+                    targets.forEach(el => {{
+                        el.value = token;
+                        console.log('Token insertado en input:', el.id || 'sin id');
+                    }});
+
+                    // 2. Interceptar ReCaptcha Enterprise
+                    if (window.grecaptcha && window.grecaptcha.enterprise) {{
+                        window.grecaptcha.enterprise.execute = function(s, o) {{
+                            console.log('✅ Interceptado execute para acción:', o.action);
+                            return Promise.resolve(token);
+                        }};
+                        return true;
+                    }}
+                    return false;
+                }}
+
+                // Intentar inyectar de inmediato y repetir si no se encuentra el objeto
+                if (!inyectar()) {{
+                    console.log('⚠️ grecaptcha no listo, programando reintentos...');
+                    let intentos = 0;
+                    const i = setInterval(() => {{
+                        intentos++;
+                        if (inyectar() || intentos > 20) {{
+                            clearInterval(i);
+                            console.log('Inyección finalizada tras ' + intentos + ' intentos');
+                        }}
+                    }}, 500);
+                }} else {{
+                    console.log('🚀 Inyección exitosa al primer intento');
+                }}
+            }})();
+            """
             
-            token = solution.get('gRecaptchaResponse')
-            print(f"Token obtenido: {token}")
-            self.action = const.ACTION_RECAPTCHA, const.STATE_SUCCESS
-            return token
+            #self.driver.execute_script(script_final)
+
+            # self.consultar_directo_sri(ruc=ruc, token_capsolver=token_valido)
+            
+            # 3. Pequeña espera para que el JS se asiente
+            import time
+            time.sleep(1) 
+            
+            return True
 
         except Exception as e:
-            self.state = const.STATE_ERROR
             self.error(f"Error al resolver: {e}")
             return False
+    # def resolver_capsolver(self, site_key):
+    #     try:
+           
+
+    #         task_id = self._capsolver.create_task(
+    #             website_url="https://srienlinea.sri.gob.ec",
+    #             website_key=site_key,
+    #             task_type="ReCaptchaV3EnterpriseTaskProxyLess",
+    #             page_action="sri_consulta_publica_ruc"
+    #         )
+
+    #         token_valido = self._capsolver.get_task_result(task_id)
+
+    #         self.info(f"El token obtenido es: {token_valido[:30]}" )
+
+    #         script_debug = f"""
+    #             if (window.grecaptcha && window.grecaptcha.enterprise) {{
+    #                 window.grecaptcha.enterprise.execute = function(siteKey, options) {{
+    #                     return Promise.resolve('{token_valido}');
+    #                 }};
+    #                 return "SUCCESS: Interceptado";
+    #             }} else {{
+    #                 return "ERROR: grecaptcha.enterprise no encontrado";
+    #             }}
+    #         """
+    #         resultado = self.driver.execute_script(script_debug)
+    #         print(f"Resultado de la inyección: {resultado}")
+
+    #         script_final = f"""
+    #             (function() {{
+    #                 const token = '{token_valido}';
+                    
+    #                 // Llenar todos los campos g-recaptcha-response que existan
+    #                 document.getElementsByName('g-recaptcha-response').forEach(el => {{
+    #                     el.value = token;
+    #                 }});
+
+    #                 // Sobrescribir la ejecución de Enterprise para que devuelva nuestro token de CapSolver
+    #                 if (window.grecaptcha && window.grecaptcha.enterprise) {{
+    #                     window.grecaptcha.enterprise.execute = function(siteKey, options) {{
+    #                         console.log('Interceptando petición para:', options.action);
+    #                         return Promise.resolve(token);
+    #                     }};
+    #                 }}
+    #             }})();
+    #             """
+    #         self.driver.execute_script(script_final)
+    #         return True
+    #         # ua_real = self.driver.execute_script("return navigator.userAgent")
+
+    #         # # proxy_address = f"{os.getenv('PROXY_HOST')}:{os.getenv('PROXY_PORT')}" 
+    #         # # print("Using proxy address:", proxy_address)
+    #         # # Creamos la tarea para reCAPTCHA v3 Enterprise
+    #         # solution = capsolver.solve({
+    #         #     "type": "ReCaptchaV3EnterpriseTaskProxyLess",
+    #         #     "websiteURL": self.driver.current_url, # URL exacta del SRI
+    #         #     "websiteKey": site_key,
+    #         #     "pageAction": "sri_consulta_publica_ruc", # Cambiar según la acción de la página
+    #         #     "minScore": 0.9, # El SRI suele ser estricto y pide score alto,
+    #         #     # "proxy": proxy_address  # Sincronización de IP
+    #         # })
+            
+    #         # token = solution.get('gRecaptchaResponse')
+    #         # print(f"Token obtenido: {token[:10]}")
+    #         # self.action = const.ACTION_RECAPTCHA, const.STATE_SUCCESS
+    #         # return token
+
+    #     except Exception as e:
+    #         self.state = const.STATE_ERROR
+    #         self.error(f"Error al resolver: {e}")
+    #         return False
 
 
     def inyectar_scripts_antideteteccion(self):    
-        
+        self.info("Se inyectaron scripts de antidetección...")
         self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
                 // 1. Eliminar rastro de WebDriver

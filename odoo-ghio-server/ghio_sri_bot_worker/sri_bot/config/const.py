@@ -246,3 +246,9 @@ SRI_XPATH_TITLE_MAIN = "//th[contains(text(), 'Actividad económica principal')]
 
 SRI_XPATH_ACTIVITY_MAIN = f"{SRI_XPATH_TITLE_MAIN}/ancestor::div[contains(@class, 'col-sm-6')]/following-sibling::div//td"
 SRI_CLASS_ALL_VALUES = "tamano-defecto-campos"
+
+CONSULTA_RUC_SRI_URL = "https://srienlinea.sri.gob.ec/sri-en-linea/SriRucWeb/ConsultaRuc/Consultas/consultaRuc"
+CONSULTA_SUPERCIAS_URL = "https://appscvsgen.supercias.gob.ec/consultaCompanias/societario/busquedaCompanias.jsf"
+CONSULTA_FUNCION_JUDICIAL_URL = "https://procesosjudiciales.funcionjudicial.gob.ec/busqueda-filtros"
+
+#

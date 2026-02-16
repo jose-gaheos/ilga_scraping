@@ -13,10 +13,15 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 
+from selenium.webdriver.chrome.webdriver import WebDriver as ChromeWebDriver
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from ..config import settings
 import os
 import json
+from dotenv import load_dotenv
+from selenium_stealth import stealth
+
+load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DOWNLOAD_DIR = os.path.join(BASE_DIR, "downloads")
@@ -51,8 +56,8 @@ class BrowserSetup:
         self.downloads_dir = downloads_dir
         self.required_cookies = required_cookies
     def setup(self):
-        # options = Options()
-        options = uc.ChromeOptions()
+        options = Options()
+        #options = uc.ChromeOptions()
         for option in settings.BROWSER_OPTIONS:
             options.add_argument(option)
 
@@ -60,6 +65,12 @@ class BrowserSetup:
         # options.add_argument("--disable-gpu")  # Desactivar GPU
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-software-rasterizer")
+
+        # extension_path = r"C:\Users\ALEJANDRO-PC\Desktop\GAHEOS-PROJECTS\ilga_scraping\extension"
+
+        # options.add_argument(f"--load-extension={extension_path}")
+
+        #options.add_argument(r"load-extension=C:\\Users\\ALEJANDRO-PC\\Desktop\\GAHEOS-PROJECTS\\ilga_scraping\\extension")
 
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
@@ -100,45 +111,27 @@ class BrowserSetup:
 
         caps = DesiredCapabilities.CHROME
         caps['goog:loggingPrefs'] = {'performance': 'ALL'}
-
+        
         driver = webdriver.Remote(command_executor=self.selenium_url, options=options)
-        # driver = uc.Chrome(options=options)
-        # driver = webdriver.Chrome(options=options)
+        #driver = uc.Chrome(options=options, stop_proc_on_exit=False)
+        #driver = webdriver.Chrome(options=options)
+        driver.__class__ = ChromeWebDriver
+        # Extraer versión real del binario ejecutado
+        # real_version = driver.capabilities['browserVersion']
+        # actual_user_agent = f"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{real_version} Safari/537.36"
+        user_agent_real = driver.execute_script("return navigator.userAgent")
+        # 3. Aplicar Selenium-Stealth
+        # Esto modifica el objeto 'navigator' y otros parámetros de hardware
+        stealth(driver,
+            user_agent=user_agent_real,
+            languages=["es-EC", "es"],
+            vendor="Google Inc.",
+            platform="Win32", # Simula que estás en Windows aunque el Grid esté en Linux/Docker
+            webgl_vendor="Intel Inc.",
+            renderer="Intel Iris OpenGL Engine",
+            fix_hairline=True,
+            fix_canvas=True
+        )
 
-        driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-            "source": """
-                // 1. Eliminar rastro de WebDriver
-                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
-
-                // 2. Simular Plugins
-                Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-
-                // 3. Simular Lenguajes
-                Object.defineProperty(navigator, 'languages', { get: () => ['es-EC', 'es', 'en'] });
-
-                // 4. Simular WebGL (Hardware real)
-                const getParameter = WebGLRenderingContext.prototype.getParameter;
-                WebGLRenderingContext.prototype.getParameter = function(parameter) {
-                    if (parameter === 37445) return 'Intel Open Source Technology Center';
-                    if (parameter === 37446) return 'Mesa DRI Intel(R) HD Graphics 550 (SKL GT2)';
-                    return getParameter.apply(this, arguments);
-                };
-            """
-        })
-        # headers = {
-        #     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-        #     "sec-ch-ua": '"Chromium";v="128", "Not;A=Brand";v="24", "Google Chrome";v="128"',
-        #     "sec-ch-ua-mobile": "?0",
-        #     "sec-ch-ua-platform": '"macOS"',
-        #     "sec-fetch-dest": "document",
-        #     "sec-fetch-mode": "navigate",
-        #     "sec-fetch-site": "same-origin",
-        #     "sec-fetch-user": "?1",
-        #     # "upgrade-insecure-requests": "1"
-        # }
-        #
-        # driver.execute_cdp_cmd('Network.enable', {})
-        #
-        # driver.execute_cdp_cmd('Network.setExtraHTTPHeaders', {'headers': headers})
 
         return driver

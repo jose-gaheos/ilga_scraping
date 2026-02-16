@@ -26,6 +26,11 @@ class SearchPage(BasePage):
         }
 
     def run(self):
+
+        if not self.open(const.CONSULTA_SUPERCIAS_URL):
+            self.action = const.ACTION_SUPERCIA_SEARCH, const.STATE_FAILED
+            return False
+        
         if not self.ensure_action(const.ACTION_SUPERCIA_SEARCH, const.STATE_INITIAL):
             print("Action or state not valid for SearchPage")
             return False
