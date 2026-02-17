@@ -74,12 +74,12 @@ class SearchPage(BasePage):
 
         xpath_mensaje = "//div[contains(@class, 'mat-mdc-snack-bar-label') and contains(., 'La consulta no devolvió resultados')]"
 
-        if self.wait_for_element_visible(xpath_mensaje, by=By.XPATH, timeout=const.TIMEOUT_LONG):
+        if self.wait_for_element_visible(xpath_mensaje, by=By.XPATH, timeout=const.TIMEOUT_MINIMUM):
             self.action = const.ACTION_HOME, const.STATE_INITIAL
             self.info("No se encontraron procesos judiciales")
             return True
 
-        if self.wait_for_element_visible(const.JF_CLASS_LIST_CAUSES, by=By.CLASS_NAME, timeout=const.TIMEOUT_LONG):
+        if self.wait_for_element_visible(const.JF_CLASS_LIST_CAUSES, by=By.CLASS_NAME, timeout=const.TIMEOUT_MINIMUM):
             self.action = const.ACTION_HOME, const.STATE_INITIAL
             self.info("Authentication successful")
             return True

@@ -32,4 +32,5 @@ services:
       - "7902:7900" # Interfaz Visual (VNC)
     volumes:
       - ./sessions/judicial:/home/seluser/.config/google-chrome
+      - ./descargas_judiciales:/tmp/files/downloads
     shm_size: 2gb

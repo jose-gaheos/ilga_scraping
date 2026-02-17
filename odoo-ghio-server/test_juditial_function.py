@@ -39,7 +39,8 @@ def main():
     manager = GHSyncJuditial(
         uid=uid,
         identification=identification,
-        selenium_url='http://localhost:4444/wd/hub',  # Cambia si usas local
+        nombre=identification,
+        selenium_url='http://localhost:4446/wd/hub',  # Cambia si usas local
         solver_apikey=api_key_2captcha
     )
 

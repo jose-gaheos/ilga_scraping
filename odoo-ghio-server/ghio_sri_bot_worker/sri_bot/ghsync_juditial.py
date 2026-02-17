@@ -31,7 +31,7 @@ class GHSyncJuditial:
             uid,
             identification,
             nombre = None,
-            selenium_url='http://localhost:4444/wd/hub',
+            selenium_url='http://localhost:4446/wd/hub',
             home_path='/tmp/files',
             solver_apikey=None,
             logs_tracking='error',
@@ -194,7 +194,7 @@ class GHSyncJuditial:
         self.driver.get(self._url)
         if not SearchPage(self, self._nombre, self._data).run():
             return False
-        if not CausesPage(self, self._data).run():
+        if not CausesPage(self, self._data, self._downloads_path).run():
             return False
         print('Data: :',json.dumps(self._data, indent=4, ensure_ascii=False))
         return True
